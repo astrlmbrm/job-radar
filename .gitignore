@@ -1,0 +1,16 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+
+vacancies.json
+filtered_vacancies.json
+rejected_vacancies.json
+enriched_vacancies.json
+scored_vacancies.json
+
+scoring_result.txt
+
+# Local diagnostic scripts
+inspect_*.py
+test_*.py
