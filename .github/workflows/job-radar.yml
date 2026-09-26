@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  telegram-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,5 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Test
-        run: python --version
+      - name: Test Telegram connection
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python telegram_bot.py
