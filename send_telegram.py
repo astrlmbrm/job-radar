@@ -4,9 +4,12 @@ import requests
 
 
 INPUT_FILE = "scored_vacancies.json"
+SENT_FILE = "sent_vacancies.json"
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+MAX_VACANCIES_PER_RUN = 20
 
 
 if not TOKEN:
@@ -16,9 +19,22 @@ if not CHAT_ID:
     raise SystemExit("Не найден TELEGRAM_CHAT_ID")
 
 
-def load_vacancies():
-    with open(INPUT_FILE, "r", encoding="utf-8") as file:
+def load_json(filename, default):
+    if not os.path.exists(filename):
+        return default
+
+    with open(filename, "r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def save_sent_ids(sent_ids):
+    with open(SENT_FILE, "w", encoding="utf-8") as file:
+        json.dump(
+            sorted(sent_ids),
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
 
 
 def format_salary(vacancy):
@@ -47,34 +63,49 @@ def send_message(text):
 
 
 def main():
-    vacancies = load_vacancies()
+    vacancies = load_json(INPUT_FILE, [])
+    sent_ids = set(load_json(SENT_FILE, []))
 
-    # Пока присылаем только действительно интересные:
-    # HOT и GOOD.
-    interesting = [
-        vacancy
-        for vacancy in vacancies
-        if vacancy.get("category") in {"HOT", "GOOD"}
-    ]
+    # Берём только HOT и GOOD, которые ещё не отправляли.
+    new_vacancies = []
 
-    # Максимум 20 вакансий за один запуск,
-    # чтобы Telegram не превращался в свалку.
-    interesting = interesting[:20]
+    for vacancy in vacancies:
+        vacancy_id = str(vacancy.get("id", ""))
 
-    if not interesting:
+        if not vacancy_id:
+            continue
+
+        if vacancy.get("category") not in {"HOT", "GOOD"}:
+            continue
+
+        if vacancy_id in sent_ids:
+            continue
+
+        new_vacancies.append(vacancy)
+
+    # scoring.py уже сортирует вакансии по убыванию score.
+    new_vacancies = new_vacancies[:MAX_VACANCIES_PER_RUN]
+
+    if not new_vacancies:
         send_message(
             "🔎 Job Radar закончил поиск.\n\n"
-            "Новых подходящих вакансий не найдено."
+            "Новых подходящих вакансий сегодня не найдено."
         )
+
+        print("Новых HOT/GOOD вакансий нет.")
         return
 
     send_message(
         "🎯 JOB RADAR\n\n"
-        f"Нашла подходящих вакансий: {len(interesting)}\n"
+        f"Новых подходящих вакансий: {len(new_vacancies)}\n"
         "Присылаю лучшие 👇"
     )
 
-    for vacancy in interesting:
+    successfully_sent = 0
+
+    for vacancy in new_vacancies:
+        vacancy_id = str(vacancy["id"])
+
         title = vacancy.get("title", "Без названия")
         company = vacancy.get("company") or "Компания не указана"
         location = vacancy.get("location") or "не указана"
@@ -90,6 +121,9 @@ def main():
             for reason in positive[:5]
         )
 
+        if not reasons:
+            reasons = "• Подходит по общему скорингу Job Radar"
+
         text = (
             f"🔥 {category} · {score} баллов\n\n"
             f"{title}\n"
@@ -101,11 +135,29 @@ def main():
             f"🔗 {url}"
         )
 
-        send_message(text)
+        try:
+            send_message(text)
+
+            # Запоминаем вакансию только после успешной отправки.
+            sent_ids.add(vacancy_id)
+            save_sent_ids(sent_ids)
+
+            successfully_sent += 1
+
+        except requests.RequestException as error:
+            print(
+                f"Не удалось отправить вакансию "
+                f"{vacancy_id}: {error}"
+            )
 
     print(
-        f"Отправлено вакансий в Telegram: "
-        f"{len(interesting)}"
+        f"Успешно отправлено новых вакансий: "
+        f"{successfully_sent}"
+    )
+
+    print(
+        f"Всего вакансий в истории отправки: "
+        f"{len(sent_ids)}"
     )
 
 
