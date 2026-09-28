@@ -11,8 +11,6 @@ OUTPUT_FILE = "scored_vacancies.json"
 # НАСТРОЙКИ СКОРИНГА
 # ============================================================
 
-# Целевые направления.
-# Совпадение в НАЗВАНИИ особенно ценно.
 TARGET_ROLES = {
     # Knowledge Management
     "knowledge management": 30,
@@ -26,8 +24,8 @@ TARGET_ROLES = {
     "технический писатель": 30,
 
     # Support L2 / Application Support
-    "application support": 30,
     "application support analyst": 35,
+    "application support": 30,
     "l2 support": 30,
     "support l2": 30,
     "техническая поддержка l2": 30,
@@ -58,96 +56,208 @@ TARGET_ROLES = {
     "researcher": 20,
     "исследователь": 20,
 
-    # Широкие технические роли — небольшой бонус,
-    # потому что нужно читать описание.
+    # Более широкие технические роли
     "technical specialist": 15,
     "технический специалист": 15,
 }
 
 
-# Навыки/задачи, которые повышают релевантность.
-POSITIVE_TERMS = {
-    "sql": 8,
-    "базы данных": 6,
-    "database": 5,
-    "databases": 5,
+# ============================================================
+# ГРУППЫ ПОЛЕЗНЫХ НАВЫКОВ
+#
+# За каждую группу бонус начисляется только ОДИН раз.
+# Например "логи", "логов" и "logs" = один навык.
+# ============================================================
 
-    "логи": 7,
-    "логов": 7,
-    "logs": 7,
+POSITIVE_GROUPS = [
+    ("SQL", 8, ["sql"]),
 
-    "api": 6,
-    "rest api": 6,
-    "http": 4,
+    (
+        "базы данных",
+        6,
+        ["базы данных", "database", "databases"],
+    ),
 
-    "confluence": 6,
-    "jira": 4,
+    (
+        "логи",
+        7,
+        ["логи", "логов", "logs"],
+    ),
 
-    "техническая документация": 8,
-    "документации": 4,
-    "documentation": 6,
+    (
+        "API",
+        6,
+        ["api", "rest api"],
+    ),
 
-    "база знаний": 8,
-    "knowledge base": 8,
+    ("HTTP", 4, ["http"]),
 
-    "инструкции": 5,
-    "регламенты": 4,
+    ("Confluence", 6, ["confluence"]),
 
-    "анализ данных": 5,
-    "data analysis": 5,
-    "data quality": 8,
+    ("Jira", 4, ["jira"]),
 
-    "python": 4,
+    (
+        "техническая документация",
+        8,
+        [
+            "техническая документация",
+            "документации",
+            "documentation",
+        ],
+    ),
 
-    "llm": 7,
-    "generative ai": 7,
-    "генеративный ии": 7,
-    "prompt": 6,
-    "промпт": 6,
+    (
+        "база знаний",
+        8,
+        ["база знаний", "knowledge base"],
+    ),
+
+    ("инструкции", 5, ["инструкции"]),
+
+    ("регламенты", 4, ["регламенты"]),
+
+    (
+        "анализ данных",
+        5,
+        ["анализ данных", "data analysis"],
+    ),
+
+    ("data quality", 8, ["data quality"]),
+
+    ("Python", 4, ["python"]),
+
+    (
+        "LLM",
+        7,
+        ["llm"],
+    ),
+
+    (
+        "Generative AI",
+        7,
+        ["generative ai", "генеративный ии"],
+    ),
+
+    (
+        "prompt",
+        6,
+        ["prompt", "промпт"],
+    ),
+]
+
+
+# ============================================================
+# ЖЁСТКИЕ ИСКЛЮЧЕНИЯ
+#
+# Если встречается такое условие, вакансия нам не подходит
+# независимо от количества положительных баллов.
+# ============================================================
+
+HARD_EXCLUSIONS = {
+    "ночной": "ночная работа",
+    "ночная": "ночная работа",
+    "ночные": "ночная работа",
+    "ночью": "ночная работа",
+    "ночная смена": "ночная работа",
+    "ночные смены": "ночная работа",
+    "ночное время": "ночная работа",
+    "ночные дежурства": "ночная работа",
+    "night shift": "ночная работа",
+    "night shifts": "ночная работа",
+    "overnight shift": "ночная работа",
 }
 
 
-# То, чего хотелось бы избегать.
-NEGATIVE_TERMS = {
-    "холодные звонки": -25,
-    "cold calls": -25,
+# ============================================================
+# НЕЖЕЛАТЕЛЬНЫЕ УСЛОВИЯ
+# ============================================================
 
-    "активные продажи": -25,
-    "продажи": -12,
-    "sales": -10,
+NEGATIVE_GROUPS = [
+    (
+        "холодные звонки",
+        -25,
+        ["холодные звонки", "cold calls"],
+    ),
 
-    "первая линия": -15,
-    "1 линия": -15,
-    "first line": -15,
-    "l1 support": -12,
+    (
+        "активные продажи",
+        -25,
+        ["активные продажи"],
+    ),
 
-    "телефонные звонки": -12,
-    "входящие звонки": -10,
+    (
+        "продажи",
+        -12,
+        ["продажи", "sales"],
+    ),
 
-    "дежурства": -12,
-    "ночные смены": -15,
-    "ночные дежурства": -18,
-    "on-call": -18,
-    "on call": -18,
-    "24/7": -10,
+    (
+        "первая линия поддержки",
+        -15,
+        [
+            "первая линия",
+            "1 линия",
+            "first line",
+            "l1 support",
+        ],
+    ),
 
-    "business development": -20,
-    "маркетинг": -12,
-    "marketing": -12,
+    (
+        "телефонные звонки",
+        -12,
+        ["телефонные звонки", "входящие звонки"],
+    ),
 
-    "project manager": -15,
-    "project management": -10,
-    "менеджер проектов": -15,
+    (
+        "дежурства",
+        -12,
+        ["дежурства"],
+    ),
 
-    "product manager": -20,
-    "product owner": -20,
+    (
+        "on-call",
+        -18,
+        ["on-call", "on call"],
+    ),
 
-    "business analyst": -15,
-    "бизнес-аналитик": -15,
-}
+    ("24/7", -10, ["24/7"]),
+
+    (
+        "business development",
+        -20,
+        ["business development"],
+    ),
+
+    (
+        "маркетинг",
+        -12,
+        ["маркетинг", "marketing"],
+    ),
+
+    (
+        "project management",
+        -15,
+        [
+            "project manager",
+            "project management",
+            "менеджер проектов",
+        ],
+    ),
+
+    (
+        "product management",
+        -20,
+        ["product manager", "product owner"],
+    ),
+
+    (
+        "business analyst",
+        -15,
+        ["business analyst", "бизнес-аналитик"],
+    ),
+]
 
 
-# Сильные предупреждения по названию.
 TITLE_PENALTIES = {
     "senior": -8,
     "lead": -12,
@@ -180,7 +290,7 @@ def save_json(filename, data):
             data,
             file,
             ensure_ascii=False,
-            indent=2
+            indent=2,
         )
 
 
@@ -196,22 +306,26 @@ def normalize(text):
 
 
 def contains_term(text, term):
-    """
-    Для коротких латинских терминов вроде SQL/API
-    стараемся не ловить случайные части слов.
-    """
-
     term = normalize(term)
 
     if term in {"sql", "api", "http", "llm"}:
         return bool(
             re.search(
-                rf"(?<![a-zа-я0-9]){re.escape(term)}(?![a-zа-я0-9])",
-                text
+                rf"(?<![a-zа-я0-9])"
+                rf"{re.escape(term)}"
+                rf"(?![a-zа-я0-9])",
+                text,
             )
         )
 
     return term in text
+
+
+def contains_any(text, terms):
+    return any(
+        contains_term(text, term)
+        for term in terms
+    )
 
 
 # ============================================================
@@ -219,7 +333,6 @@ def contains_term(text, term):
 # ============================================================
 
 def score_vacancy(vacancy):
-
     title = normalize(
         vacancy.get("title", "")
     )
@@ -241,77 +354,75 @@ def score_vacancy(vacancy):
     positive_reasons = []
     negative_reasons = []
 
-    matched_positive = set()
-    matched_negative = set()
+    # --------------------------------------------------------
+    # 0. Жёсткие исключения
+    # --------------------------------------------------------
+
+    for term, reason in HARD_EXCLUSIONS.items():
+        if contains_term(full_text, term):
+            return {
+                "score": 0,
+                "category": "SKIP",
+                "positive_reasons": [],
+                "negative_reasons": [
+                    f'ЖЁСТКОЕ ИСКЛЮЧЕНИЕ: {reason} ("{term}")'
+                ],
+            }
 
     # --------------------------------------------------------
     # 1. Целевая должность
     # --------------------------------------------------------
 
+    role_matches = []
+
     for term, points in TARGET_ROLES.items():
-
         if contains_term(title, term):
-
-            score += points
-
-            positive_reasons.append(
-                f'+{points}: целевая роль "{term}"'
+            role_matches.append(
+                (points, term)
             )
 
-            # Берём только самый сильный role match,
-            # чтобы "application support analyst"
-            # не насуммировал ещё application support.
-            break
+    if role_matches:
+        points, term = max(
+            role_matches,
+            key=lambda item: item[0],
+        )
+
+        score += points
+
+        positive_reasons.append(
+            f'+{points}: целевая роль "{term}"'
+        )
 
     # --------------------------------------------------------
     # 2. Полезные навыки
     # --------------------------------------------------------
 
-    for term, points in POSITIVE_TERMS.items():
-
-        if contains_term(full_text, term):
-
-            # Не начисляем похожий термин много раз.
-            normalized_term = normalize(term)
-
-            if normalized_term in matched_positive:
-                continue
-
+    for label, points, terms in POSITIVE_GROUPS:
+        if contains_any(full_text, terms):
             score += points
-            matched_positive.add(normalized_term)
 
             positive_reasons.append(
-                f'+{points}: {term}'
+                f"+{points}: {label}"
             )
 
     # --------------------------------------------------------
     # 3. Нежелательные условия
     # --------------------------------------------------------
 
-    for term, points in NEGATIVE_TERMS.items():
-
-        if contains_term(full_text, term):
-
-            normalized_term = normalize(term)
-
-            if normalized_term in matched_negative:
-                continue
-
+    for label, points, terms in NEGATIVE_GROUPS:
+        if contains_any(full_text, terms):
             score += points
-            matched_negative.add(normalized_term)
 
             negative_reasons.append(
-                f'{points}: {term}'
+                f"{points}: {label}"
             )
 
     # --------------------------------------------------------
-    # 4. Штрафы именно за название
+    # 4. Штрафы за название
     # --------------------------------------------------------
 
     for term, points in TITLE_PENALTIES.items():
-
         if contains_term(title, term):
-
             score += points
 
             negative_reasons.append(
@@ -323,7 +434,6 @@ def score_vacancy(vacancy):
     # --------------------------------------------------------
 
     if vacancy.get("remote") is True:
-
         score += 8
 
         positive_reasons.append(
@@ -338,51 +448,46 @@ def score_vacancy(vacancy):
     salary_to = vacancy.get("salary_to")
     currency = vacancy.get("currency")
 
-    # Пока оцениваем только RUB.
-    # Другие валюты не штрафуем.
     if currency == "RUB":
 
-        # Если верхняя граница ниже 80к,
-        # вакансия финансово не подходит.
-        if salary_to is not None and salary_to < 80000:
-
+        if (
+            salary_to is not None
+            and salary_to < 80000
+        ):
             score -= 30
 
             negative_reasons.append(
-                f"-30: зарплата до {salary_to:,} RUB"
+                f"-30: зарплата до "
+                f"{salary_to:,} RUB"
             )
 
-        # Если указана только нижняя граница
-        # и она ниже 80к — небольшой штраф,
-        # потому что потолок неизвестен.
         elif (
             salary_from is not None
             and salary_from < 80000
             and salary_to is None
         ):
-
             score -= 8
 
             negative_reasons.append(
-                f"-8: зарплата от {salary_from:,} RUB"
+                f"-8: зарплата от "
+                f"{salary_from:,} RUB"
             )
 
         elif (
             salary_from is not None
             and salary_from >= 80000
         ):
-
             score += 5
 
             positive_reasons.append(
-                f"+5: зарплата от {salary_from:,} RUB"
+                f"+5: зарплата от "
+                f"{salary_from:,} RUB"
             )
 
-    # Не даём отрицательные значения ниже нуля.
     score = max(score, 0)
 
     # --------------------------------------------------------
-    # Категория
+    # 7. Категория
     # --------------------------------------------------------
 
     if score >= 55:
@@ -410,20 +515,20 @@ def score_vacancy(vacancy):
 # ============================================================
 
 def main():
-
     vacancies = load_json(INPUT_FILE)
 
     scored = []
 
     for vacancy in vacancies:
-
         result = score_vacancy(vacancy)
 
         vacancy["score"] = result["score"]
         vacancy["category"] = result["category"]
+
         vacancy["positive_reasons"] = (
             result["positive_reasons"]
         )
+
         vacancy["negative_reasons"] = (
             result["negative_reasons"]
         )
@@ -432,12 +537,12 @@ def main():
 
     scored.sort(
         key=lambda vacancy: vacancy["score"],
-        reverse=True
+        reverse=True,
     )
 
     save_json(
         OUTPUT_FILE,
-        scored
+        scored,
     )
 
     categories = Counter(
@@ -462,9 +567,8 @@ def main():
 
     for number, vacancy in enumerate(
         scored[:20],
-        start=1
+        start=1,
     ):
-
         print()
         print(
             f'{number}. [{vacancy["score"]}] '
@@ -475,7 +579,7 @@ def main():
 
         print(
             "Компания:",
-            vacancy.get("company")
+            vacancy.get("company"),
         )
 
         salary_text = vacancy.get(
@@ -484,12 +588,12 @@ def main():
 
         print(
             "Зарплата:",
-            salary_text or "не указана"
+            salary_text or "не указана",
         )
 
         print(
             "Локация:",
-            vacancy.get("location")
+            vacancy.get("location"),
         )
 
         print("Почему:")
@@ -504,16 +608,13 @@ def main():
         ]:
             print(" ", reason)
 
-        print(
-            vacancy["url"]
-        )
-
+        print(vacancy["url"])
         print("-" * 75)
 
     print()
     print(
         "Полный рейтинг сохранён в:",
-        OUTPUT_FILE
+        OUTPUT_FILE,
     )
 
 

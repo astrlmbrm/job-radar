@@ -117,9 +117,9 @@ def main():
         positive = vacancy.get("positive_reasons", [])
 
         reasons = "\n".join(
-            f"• {reason}"
-            for reason in positive[:5]
-        )
+    f"• {reason}"
+    for reason in positive
+)
 
         if not reasons:
             reasons = "• Подходит по общему скорингу Job Radar"
