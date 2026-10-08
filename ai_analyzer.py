@@ -14,5 +14,13 @@ def analyze_vacancy(vacancy_text):
 
 
 if __name__ == "__main__":
-    result = analyze_vacancy("Python developer, удаленная работа")
+    test_vacancy = (
+        "AI-специалист по автоматизации процессов. "
+        "Удаленная работа. "
+        "Задачи: создание автоматизаций с помощью LLM, "
+        "разработка промптов, интеграция AI-инструментов, "
+        "тестирование и улучшение AI-решений."
+    )
+
+    result = analyze_vacancy(test_vacancy)
     print(result)
