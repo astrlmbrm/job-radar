@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import traceback
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -175,8 +176,94 @@ class PipelineTests(unittest.TestCase):
             post.return_value.json.return_value = {"ok": False}
             with self.assertRaises(requests.RequestException):
                 telegram.send_message("offline")
-            post.return_value.json.return_value = {"ok": True}
+            post.return_value.json.return_value = {"ok": True, "result": {"message_id": 1}}
             telegram.send_message("offline")
+
+    def test_telegram_rejects_malformed_or_unconfirmed_payloads(self):
+        os.environ.update(TELEGRAM_BOT_TOKEN="offline", TELEGRAM_CHAT_ID="offline")
+        for payload in (None, [], "text", 1, {}, {"ok": False}, {"ok": "true"},
+                        {"ok": True}, {"ok": True, "result": []},
+                        {"ok": True, "result": {}}, {"ok": True, "result": {"message_id": True}},
+                        {"ok": True, "result": {"message_id": "1"}},
+                        {"ok": True, "result": {"message_id": 0}}):
+            with self.subTest(payload=payload), patch("requests.post") as post:
+                post.return_value.json.return_value = payload
+                with self.assertRaises(telegram.TelegramDeliveryError):
+                    telegram.send_message("offline")
+
+    def test_telegram_transport_and_json_errors_have_safe_tracebacks(self):
+        secret_url = "https://api.telegram.org/botTOKEN_MUST_NOT_LEAK/sendMessage"
+        os.environ.update(TELEGRAM_BOT_TOKEN="TOKEN_MUST_NOT_LEAK", TELEGRAM_CHAT_ID="offline")
+        for phase, error in (("post", requests.ConnectionError(secret_url)),
+                             ("post", requests.Timeout(secret_url)),
+                             ("status", requests.HTTPError(secret_url)),
+                             ("json", json.JSONDecodeError(secret_url, "invalid", 0)),
+                             ("json", requests.exceptions.JSONDecodeError(secret_url, "invalid", 0))):
+            with self.subTest(phase=phase, error=type(error).__name__), patch("requests.post") as post:
+                if phase == "post":
+                    post.side_effect = error
+                elif phase == "status":
+                    post.return_value.raise_for_status.side_effect = error
+                else:
+                    post.return_value.json.side_effect = error
+                try:
+                    telegram.send_message("offline")
+                except telegram.TelegramDeliveryError:
+                    self.assertNotIn("TOKEN_MUST_NOT_LEAK", traceback.format_exc())
+                else:
+                    self.fail("Delivery error was not raised")
+
+    def test_real_sender_failures_do_not_record_history(self):
+        os.environ.update(AI_ENABLED="false", TELEGRAM_BOT_TOKEN="TOKEN_MUST_NOT_LEAK", TELEGRAM_CHAT_ID="offline")
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            history, data = Path(directory) / "sent.json", Path(directory) / "scored.json"
+            history.write_text('["1"]', encoding="utf-8")
+            data.write_text(json.dumps([vacancy(2)]), encoding="utf-8")
+            errors = (requests.ConnectionError("TOKEN_MUST_NOT_LEAK"),
+                      requests.Timeout("TOKEN_MUST_NOT_LEAK"),
+                      json.JSONDecodeError("TOKEN_MUST_NOT_LEAK", "invalid", 0),
+                      {"ok": False}, None, [], {"ok": True})
+            for outcome in errors:
+                with self.subTest(outcome=type(outcome).__name__), patch("requests.post") as post:
+                    announcement, delivery = Mock(), Mock()
+                    announcement.json.return_value = {"ok": True, "result": {"message_id": 1}}
+                    if isinstance(outcome, requests.RequestException):
+                        post.side_effect = [announcement, outcome]
+                    else:
+                        post.side_effect = [announcement, delivery]
+                        if isinstance(outcome, ValueError):
+                            delivery.json.side_effect = outcome
+                        else:
+                            delivery.json.return_value = outcome
+                    with patch.object(telegram, "INPUT_FILE", str(data)), patch.object(telegram, "SENT_FILE", str(history)), contextlib.redirect_stdout(io.StringIO()) as output:
+                        telegram.main()
+                    self.assertEqual(load_sent_ids(history), {"1"})
+                    self.assertNotIn("TOKEN_MUST_NOT_LEAK", output.getvalue())
+            with patch("requests.post") as post:
+                post.return_value.json.return_value = {"ok": True, "result": {"message_id": 2}}
+                with patch.object(telegram, "INPUT_FILE", str(data)), patch.object(telegram, "SENT_FILE", str(history)):
+                    telegram.main()
+            self.assertEqual(load_sent_ids(history), {"1", "2"})
+
+    def test_notification_errors_are_safe_and_do_not_block_vacancies(self):
+        os.environ.update(AI_ENABLED="false", TELEGRAM_BOT_TOKEN="TOKEN_MUST_NOT_LEAK", TELEGRAM_CHAT_ID="offline")
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            history, data = Path(directory) / "sent.json", Path(directory) / "scored.json"
+            history.write_text('[]', encoding="utf-8")
+            data.write_text(json.dumps([vacancy(2)]), encoding="utf-8")
+            with patch("requests.post") as post:
+                delivery = Mock()
+                delivery.json.return_value = {"ok": True, "result": {"message_id": 2}}
+                post.side_effect = [requests.Timeout("TOKEN_MUST_NOT_LEAK"), delivery]
+                with patch.object(telegram, "INPUT_FILE", str(data)), patch.object(telegram, "SENT_FILE", str(history)), contextlib.redirect_stdout(io.StringIO()) as output:
+                    telegram.main()
+                self.assertEqual(load_sent_ids(history), {"2"})
+                self.assertNotIn("TOKEN_MUST_NOT_LEAK", output.getvalue())
+                post.side_effect = requests.Timeout("TOKEN_MUST_NOT_LEAK")
+                with patch.object(telegram, "INPUT_FILE", str(data)), patch.object(telegram, "SENT_FILE", str(history)), contextlib.redirect_stdout(io.StringIO()) as output:
+                    telegram.main()  # Empty-results notification fails safely too.
+                self.assertEqual(load_sent_ids(history), {"2"})
+                self.assertNotIn("TOKEN_MUST_NOT_LEAK", output.getvalue())
 
     def test_description_truncation_and_model_override(self):
         os.environ["OPENAI_MODEL"] = "configured-model"

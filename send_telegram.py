@@ -11,6 +11,10 @@ SENT_FILE = "sent_vacancies.json"
 MAX_VACANCIES_PER_RUN = 20
 
 
+class TelegramDeliveryError(requests.RequestException):
+    """Safe error with no credential-bearing URLs or response bodies."""
+
+
 def load_json(filename, default):
     if not os.path.exists(filename):
         return default
@@ -30,14 +34,29 @@ def send_message(text):
     token, chat_id = os.getenv("TELEGRAM_BOT_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
         raise RuntimeError("Не заданы Telegram credentials")
-    response = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": chat_id, "text": text, "disable_web_page_preview": True},
-        timeout=30,
-    )
-    response.raise_for_status()
-    if response.json().get("ok") is not True:
-        raise requests.RequestException("Telegram did not confirm success")
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={"chat_id": chat_id, "text": text, "disable_web_page_preview": True},
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError):
+        # Also suppress chained exceptions: HTTP errors may include the bot token.
+        raise TelegramDeliveryError("Telegram delivery failed") from None
+    result = payload.get("result") if isinstance(payload, dict) else None
+    if (not isinstance(payload, dict) or payload.get("ok") is not True
+            or not isinstance(result, dict) or type(result.get("message_id")) is not int
+            or result["message_id"] <= 0):
+        raise TelegramDeliveryError("Telegram did not confirm success")
+
+
+def send_notification(text):
+    try:
+        send_message(text)
+    except requests.RequestException:
+        print("Не удалось отправить уведомление Telegram")
 
 
 def select_vacancies(vacancies, sent_ids, use_ai):
@@ -89,16 +108,16 @@ def main():
     sent_ids = load_sent_ids(SENT_FILE)
     new_vacancies = select_vacancies(vacancies, sent_ids, use_ai)
     if not new_vacancies:
-        send_message("🔎 Job Radar закончил поиск.\n\nНовых подходящих вакансий сегодня не найдено.")
+        send_notification("🔎 Job Radar закончил поиск.\n\nНовых подходящих вакансий сегодня не найдено.")
         print("Новых подходящих вакансий нет.")
         return
-    send_message(f"🎯 JOB RADAR\n\nНовых подходящих вакансий: {len(new_vacancies)}\nПрисылаю лучшие 👇")
+    send_notification(f"🎯 JOB RADAR\n\nНовых подходящих вакансий: {len(new_vacancies)}\nПрисылаю лучшие 👇")
     successfully_sent = 0
     for vacancy in new_vacancies:
         vacancy_id = str(vacancy["id"])
         try:
             send_message(format_message(vacancy, use_ai))
-        except (requests.RequestException, ValueError):
+        except requests.RequestException:
             # Request errors may include the bot token in a URL. Do not print them.
             print(f"Не удалось отправить вакансию {vacancy_id}")
             continue
