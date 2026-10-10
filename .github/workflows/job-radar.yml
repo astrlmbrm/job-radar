@@ -2,6 +2,15 @@ name: Job Radar
 
 on:
   workflow_dispatch:
+    inputs:
+      ai_enabled:
+        description: "Enable paid AI analysis for this manual run"
+        type: boolean
+        default: false
+      ai_max_vacancies:
+        description: "AI request limit (0–20)"
+        type: string
+        default: "3"
 
   schedule:
     - cron: "17 6 * * *"
@@ -9,10 +18,18 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: job-radar-history
+  cancel-in-progress: false
+
 jobs:
   job-radar:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      AI_ENABLED: ${{ github.event_name == 'workflow_dispatch' && toJSON(inputs.ai_enabled) || vars.AI_ENABLED || 'false' }}
+      AI_MAX_VACANCIES: ${{ inputs.ai_max_vacancies || vars.AI_MAX_VACANCIES || '20' }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5-nano' }}
 
     steps:
       - name: Checkout repository
@@ -38,6 +55,11 @@ jobs:
       - name: Score vacancies
         run: python scoring.py
 
+      - name: Analyze promising vacancies with AI
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python ai_analyzer.py
+
       - name: Send new vacancies to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -45,6 +67,7 @@ jobs:
         run: python send_telegram.py
 
       - name: Save sent vacancy history
+        if: ${{ always() && !cancelled() }}
         run: |
           git config user.name "Job Radar Bot"
           git config user.email "job-radar-bot@users.noreply.github.com"

@@ -8,6 +8,7 @@ filtered_vacancies.json
 rejected_vacancies.json
 enriched_vacancies.json
 scored_vacancies.json
+ai_vacancies.json
 
 scoring_result.txt
 
