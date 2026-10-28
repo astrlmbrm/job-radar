@@ -18,6 +18,37 @@ EXCLUDE_TITLE_PHRASES = [
     "старшая",
     "ведущий",
     "ведущая",
+    # Нерелевантные специализации (только названия)
+    "bi-аналитик",
+    "bi аналитик",
+    "bi analyst",
+    "business intelligence analyst",
+    "системный аналитик",
+    "system analyst",
+    "systems analyst",
+    "system analysis",
+    "аналитик 1с",
+    "консультант по эдо",
+    "консультант 1с",
+    "консультант по 1с",
+    "разработчик 1с",
+    "1с разработчик",
+    "r&d ai engineer",
+    "r&d engineer",
+    "антифрод",
+    "antifraud",
+    "anti-fraud",
+    "rpa developer",
+    "rpa разработчик",
+    "python developer",
+    "python-разработчик",
+    "python разработчик",
+    "разработчик python",
+    "python engineer",
+    "инженер по автоматизации тестирования",
+    "automation qa",
+    "qa automation",
+
     # Продажи / коммерция
     "менеджер по продажам",
     "sales manager",
@@ -45,8 +76,8 @@ EXCLUDE_TITLE_PHRASES = [
     "smm",
     "копирайтер",
     "copywriter",
-    "дизайнер",
-    "designer",
+    # Дизайн сайтов и веб-интерфейсов теперь релевантен.
+    # Не исключаем все вакансии со словом "дизайнер".
 
     # Учебные работы
     "автор студенческих работ",
