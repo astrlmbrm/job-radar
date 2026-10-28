@@ -12,6 +12,23 @@ OUTPUT_FILE = "scored_vacancies.json"
 # ============================================================
 
 TARGET_ROLES = {
+    # Создание сайтов и AI-assisted web
+    "tilda": 35,
+    "лендинг": 30,
+    "разработка сайтов": 30,
+    "создание сайтов": 30,
+    "веб-разработчик": 25,
+    "web designer": 20,
+    "веб-дизайнер": 20,
+    "вайбкод": 30,
+    "vibe coding": 30,
+
+    # Аналитика поддержки и сопровождение
+    "аналитик технической поддержки": 40,
+    "аналитик службы поддержки": 40,
+    "специалист технической поддержки 2 линии": 40,
+    "инженер сопровождения": 30,
+
     # Knowledge Management
     "knowledge management": 30,
     "knowledge manager": 30,
@@ -39,9 +56,6 @@ TARGET_ROLES = {
 
     # Operations
     "data operations": 30,
-    "operations analyst": 25,
-    "ai operations": 30,
-    "prompt operations": 30,
 
     # AI / vibe coding
     "ai specialist": 25,
@@ -50,11 +64,6 @@ TARGET_ROLES = {
     "generative ai": 30,
     "vibe coding": 25,
     "вайбкод": 25,
-
-    # Research
-    "research analyst": 25,
-    "researcher": 20,
-    "исследователь": 20,
 
     # Более широкие технические роли
     "technical specialist": 15,
@@ -124,7 +133,9 @@ POSITIVE_GROUPS = [
 
     ("data quality", 8, ["data quality"]),
 
-    ("Python", 4, ["python"]),
+    ("Tilda", 10, ["tilda", "zero block", "zero-block"]),
+    ("HTML/CSS", 7, ["html", "css"]),
+    ("AI-assisted web", 8, ["codex", "ai-assisted", "разработка сайтов с ии"]),
 
     (
         "LLM",
@@ -259,7 +270,7 @@ NEGATIVE_GROUPS = [
 
 
 TITLE_PENALTIES = {
-    "senior": -8,
+    "senior": -30,
     "lead": -12,
     "teamlead": -15,
     "team lead": -15,
