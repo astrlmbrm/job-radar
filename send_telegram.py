@@ -75,6 +75,14 @@ def main():
         if not vacancy_id:
             continue
 
+        # Exclude clearly under-budget vacancies before notifications.
+        if (
+            vacancy.get("currency") == "RUB"
+            and vacancy.get("salary_to") is not None
+            and vacancy["salary_to"] < 80000
+        ):
+            continue
+
         if vacancy.get("category") not in {"HOT", "GOOD"}:
             continue
 

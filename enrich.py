@@ -113,6 +113,10 @@ def main():
     except FileNotFoundError:
         enriched_by_id = {}
 
+    # Keep only current-run candidates; avoid rescoring stale cached jobs.
+    current_ids = {v["id"] for v in vacancies}
+    enriched_by_id = {k: v for k, v in enriched_by_id.items() if k in current_ids}
+
     total = len(vacancies)
 
     success_count = 0
@@ -140,9 +144,19 @@ def main():
 
         print(vacancy["url"])
 
-        details = get_vacancy_details(
-            vacancy["url"]
-        )
+        if vacancy.get("source") == "jobhunters":
+            # Job Hunters details may load dynamically. Use the isolated card
+            # preview instead of scraping unrelated page content.
+            details = {
+                "success": bool(vacancy.get("listing_preview")),
+                "description": vacancy.get("listing_preview"),
+                "skills": [],
+                "error": None if vacancy.get("listing_preview") else "Нет превью",
+            }
+        else:
+            details = get_vacancy_details(
+                vacancy["url"]
+            )
 
         vacancy["description"] = (
             details["description"]
