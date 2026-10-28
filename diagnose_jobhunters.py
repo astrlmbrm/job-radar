@@ -31,6 +31,21 @@ def main():
                 if re.search(r"/jobs/\\d+", a.get("href", ""))
             })
             print("Job detail links in HTML:", len(links))
+            all_job_hrefs = sorted({
+                a.get("href", "").split("?")[0]
+                for a in soup.select('a[href*="/jobs/"]')
+            })
+            print("All links containing /jobs/:", len(all_job_hrefs))
+            print("Other sample job paths:", all_job_hrefs[:8])
+            print("Job path occurrences in raw HTML:", len(re.findall(r'/jobs/[0-9]+', response.text)))
+            print("Total anchors:", len(soup.select("a[href]")))
+            print("Script tags:", len(soup.select("script")))
+            print("Script source samples:", [
+                tag.get("src", "")[:120]
+                for tag in soup.select("script[src]")[:8]
+            ])
+            print("Embedded JSON scripts:", len(soup.select('script[type="application/json"]')))
+            print("HTML text length:", len(soup.get_text(" ", strip=True)))
             print("Sample paths:", links[:5])
             print("JSON-LD scripts:", len(soup.select('script[type="application/ld+json"]')))
             print("Next.js data marker:", bool(soup.select_one("script#__NEXT_DATA__")))
