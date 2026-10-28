@@ -113,6 +113,10 @@ def main():
     except FileNotFoundError:
         enriched_by_id = {}
 
+    # Keep only current-run candidates; avoid rescoring stale cached jobs.
+    current_ids = {v["id"] for v in vacancies}
+    enriched_by_id = {k: v for k, v in enriched_by_id.items() if k in current_ids}
+
     total = len(vacancies)
 
     success_count = 0
