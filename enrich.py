@@ -140,9 +140,19 @@ def main():
 
         print(vacancy["url"])
 
-        details = get_vacancy_details(
-            vacancy["url"]
-        )
+        if vacancy.get("source") == "jobhunters":
+            # Job Hunters details may load dynamically. Use the isolated card
+            # preview instead of scraping unrelated page content.
+            details = {
+                "success": bool(vacancy.get("listing_preview")),
+                "description": vacancy.get("listing_preview"),
+                "skills": [],
+                "error": None if vacancy.get("listing_preview") else "Нет превью",
+            }
+        else:
+            details = get_vacancy_details(
+                vacancy["url"]
+            )
 
         vacancy["description"] = (
             details["description"]
