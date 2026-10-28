@@ -1,35 +1,37 @@
+# Поисковые запросы HH. Узкие формулировки уменьшают нерелевантную выдачу.
+# Финальную релевантность проверяют filters.py и scoring.py.
 SEARCH_QUERIES = [
-    # AI / вайбкодинг
-    "AI специалист",
-    "специалист по генеративному ИИ",
-    "AI operations",
-    "prompt operations",
-    "вайбкодер",
-    "vibe coding",
-
-    # Базы знаний / документация
-    "технический писатель",
-    "technical writer",
-    "knowledge management",
-    "специалист по управлению знаниями",
-    "специалист базы знаний",
-
-    # Техническая поддержка
-    "L2 support",
+    # Вторая линия и сопровождение систем
+    "инженер технической поддержки L2",
+    "специалист технической поддержки 2 линии",
+    "аналитик технической поддержки",
+    "аналитик службы поддержки",
     "application support",
     "application support analyst",
-    "инженер технической поддержки L2",
-    "technical specialist",
+    "инженер сопровождения информационных систем",
 
-    # Quality / Data
-    "quality analyst",
+    # Сайты, Tilda и AI-assisted разработка
+    "Tilda",
+    "специалист Tilda",
+    "разработчик Tilda",
+    "верстальщик лендингов",
+    "создание лендингов",
+    "AI разработка сайтов",
+    "создание сайтов с помощью ИИ",
+    "вайбкодер",
+    "vibe coding",
+    "AI website builder",
+
+    # AI-контент и прикладные AI-инструменты
+    "AI креатор",
+    "AI редактор",
+    "специалист по генеративному ИИ",
+
+    # Базы знаний и качество
+    "специалист базы знаний",
+    "knowledge base specialist",
+    "knowledge management",
+    "технический писатель",
     "data quality analyst",
-    "content quality",
     "AI quality",
-    "data operations",
-
-    # Аналитика / operations
-    "operations analyst",
-    "research analyst",
-    "technical analyst",
 ]
