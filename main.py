@@ -56,7 +56,7 @@ def collect_vacancies():
         time.sleep(2)
 
     # Collect Job Hunters separately; failures must not stop HH.
-    print("\\nCollecting Job Hunters listings")
+    print("\nCollecting Job Hunters listings")
     try:
         jobhunters_vacancies = search_jobhunters()
         print(f"Job Hunters: {len(jobhunters_vacancies)} vacancies")
