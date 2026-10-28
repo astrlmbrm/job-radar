@@ -35,3 +35,17 @@ jobs:
               with open(fn, encoding='utf-8') as f: data=json.load(f)
               print(fn, len(data), dict(Counter(v.get('source','?') for v in data)))
           PY
+      - name: Preview Job Hunters notification candidates (no Telegram)
+        run: |
+          python - <<'PY'
+          import json
+          with open('scored_vacancies.json',encoding='utf-8') as f: rows=json.load(f)
+          for v in rows:
+              if v.get('source') != 'jobhunters': continue
+              salary_cap = v.get('salary_to')
+              under_budget = v.get('currency')=='RUB' and salary_cap is not None and salary_cap<80000
+              sendable = v.get('category') in ('HOT','GOOD') and not under_budget
+              print('JOBHUNTERS:',repr(v.get('title')),'category=',v.get('category'),'score=',v.get('score'),'salary=',repr(v.get('salary_text')),'sendable=',sendable,'url=',v.get('url'))
+              print('  positive:',v.get('positive_reasons'))
+              print('  negative:',v.get('negative_reasons'))
+          PY
