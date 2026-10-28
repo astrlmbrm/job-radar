@@ -56,7 +56,7 @@ def search_jobhunters():
         tags_text = tags.get_text(" ", strip=True) if tags else ""
         tags_normalized = normalize(tags_text)
         remote = bool(re.search(r"\bудаленно\b|\bremote\b", tags_normalized))
-        if RESTRICTED_REMOTE.search(tags_text):
+        if RESTRICTED_REMOTE.search(tags_text) or re.search(r"remote\s*\([^)]*\)", tags_text, re.I):
             remote = False
         if re.search(r"\bгибрид\b|\bкомбинированн\w*\b|\bофис\b|\bon.?site\b|\bhybrid\b", tags_normalized):
             remote = False
