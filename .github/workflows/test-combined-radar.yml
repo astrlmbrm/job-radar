@@ -1,6 +1,8 @@
 name: Test combined radar without Telegram
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
