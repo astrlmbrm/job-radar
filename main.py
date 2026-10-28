@@ -3,6 +3,7 @@ import time
 
 from config import SEARCH_QUERIES
 from sources.hh import search_hh
+from sources.jobhunters import search_jobhunters
 
 
 OUTPUT_FILE = "vacancies.json"
@@ -53,6 +54,19 @@ def collect_vacancies():
 
         # Небольшая пауза между запросами.
         time.sleep(2)
+
+    # Collect Job Hunters separately; failures must not stop HH.
+    print("\\nCollecting Job Hunters listings")
+    try:
+        jobhunters_vacancies = search_jobhunters()
+        print(f"Job Hunters: {len(jobhunters_vacancies)} vacancies")
+        for vacancy in jobhunters_vacancies:
+            vacancy_id = vacancy["id"]
+            if vacancy_id not in all_vacancies:
+                vacancy["matched_queries"] = ["Job Hunters latest"]
+                all_vacancies[vacancy_id] = vacancy
+    except Exception as error:
+        print(f"Job Hunters unavailable: {type(error).__name__}: {error}")
 
     return list(all_vacancies.values())
 
